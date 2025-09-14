@@ -1,8 +1,14 @@
-This is a website where you can view Messenger JSON messages file as a log!
-Very simple, upload your zip file that contains the messages.
+# Messenger JSON → Log
 
-Frequently Asked Questions
-Q. How do I get my own zip file that has messages?
-A. Go to messenger.com, press your profile at the bottom left corner,
-Press Privacy & safety, End-to-end encrypted chats, Message Storage, Download Secure storage data.
-Oh, also press "Download File" after pressing Download Secure storage data.
+Personal project: A small website that lets me upload Messenger `.zip` or `.json` files and convert them into a readable log.  
+It also shows stats (message counts, swears, etc.) and allows downloading as a `.log` file.
+
+## Notes for me
+- Messenger export:  
+  Messenger → Profile → Privacy & safety → End-to-end encrypted chats → Message Storage → Download Secure storage data → Download File.
+- Inside the `.zip`:  
+  - JSON files are at root.  
+  - `media/` folder contains images, videos, audio, etc.  
+
+## To run
+Just open `index.html` in a browser, or host it with GitHub Pages if needed.
