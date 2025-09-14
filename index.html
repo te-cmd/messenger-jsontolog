@@ -2,127 +2,198 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Messenger JSON to Log</title>
+  <title>Messenger JSON → Log</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #000;
-      color: #0f0;
+    body { 
+      font-family: 'Inter', sans-serif; 
+      font-weight: 600;
+      background: #fafafa;
+      color: #222;
       margin: 0;
       padding: 20px;
     }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #0ff;
-    }
-
-    .container {
-      display: flex;
-      gap: 20px;
-    }
-
-    .sidebar {
-      flex: 1;
-    }
-
-    .file-btn {
-      display: block;
-      background: #0ff;
-      color: black;
-      border: none;
-      border-radius: 20px;
-      padding: 12px;
-      margin: 10px 0;
-      cursor: pointer;
-      font-weight: bold;
-      text-align: center;
-      box-shadow: 0px 3px 6px rgba(0,0,0,0.2);
-      transition: background 0.2s;
-    }
-    .file-btn:hover {
-      background: #0cc;
-    }
-
-    .viewer {
-      flex: 2;
-      border: 3px solid #0ff;
-      padding: 15px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      overflow-y: auto;
-      max-height: 80vh;
-      background: black;
-      color: #0f0;
-    }
-
-    .status {
+    h2 {
       margin-bottom: 15px;
-      font-weight: bold;
-      color: #ff0;
+    }
+    .log-line { 
+      margin: 2px 0; 
+    }
+    .log-link { 
+      color: #007aff; 
+      text-decoration: underline; 
+      cursor: pointer; 
+    }
+    #media { margin-top: 20px; }
+    #downloadLink {
+      display: none;
+      margin-top: 15px;
+      display: inline-block;
+      background: #007aff;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    #downloadLink:hover {
+      background: #005ecb;
+    }
+    input, button {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      padding: 6px 10px;
+      margin-right: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #f0f0f0;
     }
   </style>
 </head>
 <body>
-  <h1>Messenger JSON to Log</h1>
-  <div class="status" id="status">No files loaded</div>
+  <h2>Messenger JSON to Log Converter</h2>
+  <input type="file" id="fileInput" />
+  <button id="convertBtn">Convert</button>
+  <div id="output"></div>
+  <div id="media"></div>
+  <a id="downloadLink">Download .log file</a>
 
-  <div class="container">
-    <div class="sidebar" id="fileList">
-      <!-- Buttons will be added here -->
-    </div>
-    <div class="viewer" id="viewer">
-      Select a file to preview its log
-    </div>
-  </div>
-
-  <input type="file" id="zipInput" accept=".zip" />
-
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
-    const input = document.getElementById("zipInput");
-    const fileList = document.getElementById("fileList");
-    const viewer = document.getElementById("viewer");
-    const status = document.getElementById("status");
+  const playableExts = [".ogg", ".wav", ".mp4", ".mp3", ".jpeg", ".jpg", ".png"];
+  const badWords = ["fuck","Fuck","shit","Shit","bitch","Bitch","gago","bobo","Bobo","tanga","FUCK","TANGINAINA","Puta","PUTA","HAYOPKA","sh!t","SH1T"];
 
-    function formatMessengerLog(json) {
-      if (!json.messages) return "Invalid Messenger JSON";
+  let swearCount = 0;
+  let userSwears = {};
+  let totalMessages = 0;
+  let userMessages = {};
 
-      return json.messages.map(msg => {
-        const sender = msg.sender_name || "Unknown";
-        const text = Array.isArray(msg.content) ? msg.content.join(" ") : (msg.content || "");
-        const time = msg.timestamp_ms ? new Date(msg.timestamp_ms).toLocaleString() : "Unknown time";
-        return `[${time}] ${sender}: ${text}`;
-      }).reverse().join("\n");
-    }
-
-    input.addEventListener("change", async () => {
-      if (!input.files.length) return;
-      const file = input.files[0];
-      const jszip = new JSZip();
-
-      const contents = await jszip.loadAsync(file);
-      const jsonFiles = Object.keys(contents.files).filter(f => f.endsWith(".json"));
-
-      status.textContent = `${jsonFiles.length} json files detected!`;
-      fileList.innerHTML = "";
-
-      jsonFiles.forEach(filename => {
-        const btn = document.createElement("button");
-        btn.textContent = filename;
-        btn.className = "file-btn";
-        btn.onclick = async () => {
-          const text = await contents.files[filename].async("text");
-          try {
-            const obj = JSON.parse(text);
-            viewer.textContent = formatMessengerLog(obj);
-          } catch {
-            viewer.textContent = text;
-          }
-        };
-        fileList.appendChild(btn);
-      });
+  function filterText(text, sender) {
+    let result = text;
+    badWords.forEach(word => {
+      const regex = new RegExp(word, "g"); 
+      if (regex.test(result)) {
+        const matches = result.match(regex);
+        if (matches) {
+          swearCount += matches.length;
+          if (!userSwears[sender]) userSwears[sender] = 0;
+          userSwears[sender] += matches.length;
+        }
+      }
+      result = result.replace(regex, match => "#".repeat(match.length));
     });
+    return result;
+  }
+
+  document.getElementById("convertBtn").addEventListener("click", () => {
+    swearCount = 0;
+    userSwears = {};
+    totalMessages = 0;
+    userMessages = {};
+
+    const fileInput = document.getElementById("fileInput").files[0];
+    if (!fileInput) return alert("Please choose a JSON file first.");
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = JSON.parse(e.target.result);
+      const messages = data.messages || [];
+      const outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = "";
+      const mediaDiv = document.getElementById("media");
+      mediaDiv.innerHTML = "";
+      const logLines = [];
+
+      messages.forEach(msg => {
+        const sender = msg.senderName || "Unknown";
+        let ts = "Unknown time";
+        if (msg.timestamp) {
+          const d = new Date(msg.timestamp);
+          if (!isNaN(d.getTime())) ts = d.toISOString().replace("T"," ").split(".")[0];
+        }
+
+        totalMessages++;
+        if (!userMessages[sender]) userMessages[sender] = 0;
+        userMessages[sender]++;
+
+        let text = msg.text && msg.text.trim() ? filterText(msg.text, sender) : "";
+        let displayLine = document.createElement("div");
+        displayLine.className = "log-line";
+        let lineText = `[${ts}] ${sender}: `;
+
+        if (msg.media && msg.media.length > 0) {
+          msg.media.forEach(m => {
+            const uri = m.uri || "";
+            const lower = uri.toLowerCase();
+            let tagText = playableExts.some(ext => lower.endsWith(ext)) ? `[Media: ${uri}]` : `[File: ${uri}]`;
+            const a = document.createElement("a");
+            a.href = uri;
+            a.textContent = tagText;
+            a.className = "log-link";
+            a.target = "_blank";
+
+            displayLine.appendChild(document.createTextNode(lineText + (text ? text + " " : "")));
+            displayLine.appendChild(a);
+            lineText += (text ? text + " " : "") + tagText;
+          });
+        } else {
+          if (!text) text = "[Empty message]";
+          lineText += text;
+          displayLine.textContent = lineText;
+        }
+
+        outputDiv.appendChild(displayLine);
+        logLines.push(lineText);
+      });
+
+      // Stats display
+      const countDiv = document.createElement("div");
+      countDiv.style.marginTop = "15px";
+      countDiv.style.fontWeight = "600";
+      countDiv.textContent = `Total swears detected: ${swearCount}`;
+      outputDiv.appendChild(countDiv);
+
+      if (Object.keys(userSwears).length > 0) {
+        const perUserDiv = document.createElement("div");
+        perUserDiv.style.marginTop = "5px";
+        perUserDiv.innerHTML = "Swears per user:<br>" + 
+          Object.entries(userSwears).map(([user, count]) => `${user}: ${count}`).join("<br>");
+        outputDiv.appendChild(perUserDiv);
+      }
+
+      const msgDiv = document.createElement("div");
+      msgDiv.style.marginTop = "15px";
+      msgDiv.style.fontWeight = "600";
+      msgDiv.textContent = `Total messages: ${totalMessages}`;
+      outputDiv.appendChild(msgDiv);
+
+      if (Object.keys(userMessages).length > 0) {
+        const perUserMsgDiv = document.createElement("div");
+        perUserMsgDiv.style.marginTop = "5px";
+        perUserMsgDiv.innerHTML = "Messages per user:<br>" + 
+          Object.entries(userMessages).map(([user, count]) => `${user}: ${count}`).join("<br>");
+        outputDiv.appendChild(perUserMsgDiv);
+      }
+
+      // Prepare downloadable log
+      let logText = logLines.join("\n") + `\n\nTotal swears detected: ${swearCount}`;
+      if (Object.keys(userSwears).length > 0) logText += "\nSwears per user:\n" + Object.entries(userSwears).map(([user, count]) => `${user}: ${count}`).join("\n");
+      logText += `\n\nTotal messages: ${totalMessages}`;
+      if (Object.keys(userMessages).length > 0) logText += "\nMessages per user:\n" + Object.entries(userMessages).map(([user, count]) => `${user}: ${count}`).join("\n");
+
+      const blob = new Blob([logText], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.getElementById("downloadLink");
+      link.href = url;
+      link.download = "messenger_chat.log";
+      link.style.display = "inline-block";
+    };
+
+    reader.readAsText(fileInput);
+  });
   </script>
 </body>
 </html>
