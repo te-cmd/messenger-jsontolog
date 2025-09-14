@@ -6,14 +6,15 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #fff;
-      color: #0099ff;
+      background: #000;
+      color: #0f0;
       margin: 0;
       padding: 20px;
     }
 
     h1 {
       margin-bottom: 20px;
+      color: #0ff;
     }
 
     .container {
@@ -27,8 +28,8 @@
 
     .file-btn {
       display: block;
-      background: #0099ff;
-      color: white;
+      background: #0ff;
+      color: black;
       border: none;
       border-radius: 20px;
       padding: 12px;
@@ -40,22 +41,25 @@
       transition: background 0.2s;
     }
     .file-btn:hover {
-      background: #007acc;
+      background: #0cc;
     }
 
     .viewer {
       flex: 2;
-      border: 3px solid #0099ff;
+      border: 3px solid #0ff;
       padding: 15px;
       font-family: monospace;
       white-space: pre-wrap;
       overflow-y: auto;
       max-height: 80vh;
+      background: black;
+      color: #0f0;
     }
 
     .status {
       margin-bottom: 15px;
       font-weight: bold;
+      color: #ff0;
     }
   </style>
 </head>
@@ -68,7 +72,7 @@
       <!-- Buttons will be added here -->
     </div>
     <div class="viewer" id="viewer">
-      Select a file to preview its contents
+      Select a file to preview its log
     </div>
   </div>
 
@@ -80,6 +84,17 @@
     const fileList = document.getElementById("fileList");
     const viewer = document.getElementById("viewer");
     const status = document.getElementById("status");
+
+    function formatMessengerLog(json) {
+      if (!json.messages) return "Invalid Messenger JSON";
+
+      return json.messages.map(msg => {
+        const sender = msg.sender_name || "Unknown";
+        const text = Array.isArray(msg.content) ? msg.content.join(" ") : (msg.content || "");
+        const time = msg.timestamp_ms ? new Date(msg.timestamp_ms).toLocaleString() : "Unknown time";
+        return `[${time}] ${sender}: ${text}`;
+      }).reverse().join("\n");
+    }
 
     input.addEventListener("change", async () => {
       if (!input.files.length) return;
@@ -100,7 +115,7 @@
           const text = await contents.files[filename].async("text");
           try {
             const obj = JSON.parse(text);
-            viewer.textContent = JSON.stringify(obj, null, 2);
+            viewer.textContent = formatMessengerLog(obj);
           } catch {
             viewer.textContent = text;
           }
