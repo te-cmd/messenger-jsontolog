@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Messenger JSON → Log Media</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: "Courier New", monospace;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      color: #6cf;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .media-item {
+      display: flex;
+      align-items: center;
+      border: 1px solid #444;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #000;
+    }
+    .thumb {
+      width: 120px;
+      height: 80px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+    }
+    .thumb img, .thumb video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .details {
+      flex: 1;
+    }
+    .filename {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #aaa;
+    }
+    audio, video {
+      width: 300px;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2>Messenger JSON → Log Media</h2>
+  <div id="mediaList">
+    <!-- Example item -->
+    <div class="media-item">
+      <div class="thumb">
+        <video src="./media/video.mp4" muted></video>
+      </div>
+      <div class="details">
+        <video src="./media/video.mp4" controls></video>
+        <div class="filename">video.mp4</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
