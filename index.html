@@ -3,55 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Messenger JSON → Log</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet">
   <style>
-    body { 
-      font-family: 'Inter', sans-serif; 
-      font-weight: 600;
-      background: #fafafa;
-      color: #222;
-      margin: 0;
-      padding: 20px;
-    }
-    h2 {
-      margin-bottom: 15px;
-    }
-    .log-line { 
-      margin: 2px 0; 
-    }
-    .log-link { 
-      color: #007aff; 
-      text-decoration: underline; 
-      cursor: pointer; 
-    }
+    body { font-family: monospace; }
+    .log-line { margin: 2px 0; }
+    .log-link { color: blue; text-decoration: underline; cursor: pointer; }
     #media { margin-top: 20px; }
-    #downloadLink {
-      display: none;
-      margin-top: 15px;
-      display: inline-block;
-      background: #007aff;
-      color: #fff;
-      text-decoration: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-    #downloadLink:hover {
-      background: #005ecb;
-    }
-    input, button {
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      padding: 6px 10px;
-      margin-right: 10px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #f0f0f0;
-    }
   </style>
 </head>
 <body>
@@ -60,11 +16,13 @@
   <button id="convertBtn">Convert</button>
   <div id="output"></div>
   <div id="media"></div>
-  <a id="downloadLink">Download .log file</a>
+  <a id="downloadLink" style="display:none;">Download .log file</a>
 
   <script>
   const playableExts = [".ogg", ".wav", ".mp4", ".mp3", ".jpeg", ".jpg", ".png"];
-  const badWords = ["fuck","Fuck","shit","Shit","bitch","Bitch","gago","bobo","Bobo","tanga","FUCK","TANGINAINA","Puta","PUTA","HAYOPKA","sh!t","SH1T"];
+
+  // List of bad words (case-sensitive!)
+  const badWords = ["fuck", "Fuck", "shit", "Shit", "bitch", "Bitch", "gago", "bobo", "Bobo", "tanga", "FUCK", "TANGINAINA", "Puta", "PUTA", "HAYOPKA", "sh!t", "SH1T"];
 
   let swearCount = 0;
   let userSwears = {};
@@ -74,7 +32,7 @@
   function filterText(text, sender) {
     let result = text;
     badWords.forEach(word => {
-      const regex = new RegExp(word, "g"); 
+      const regex = new RegExp(word, "g"); // case-sensitive
       if (regex.test(result)) {
         const matches = result.match(regex);
         if (matches) {
@@ -95,26 +53,35 @@
     userMessages = {};
 
     const fileInput = document.getElementById("fileInput").files[0];
-    if (!fileInput) return alert("Please choose a JSON file first.");
+    if (!fileInput) {
+      alert("Please choose a JSON file first.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = JSON.parse(e.target.result);
       const messages = data.messages || [];
+
       const outputDiv = document.getElementById("output");
       outputDiv.innerHTML = "";
       const mediaDiv = document.getElementById("media");
       mediaDiv.innerHTML = "";
+
       const logLines = [];
 
       messages.forEach(msg => {
         const sender = msg.senderName || "Unknown";
         let ts = "Unknown time";
+
         if (msg.timestamp) {
           const d = new Date(msg.timestamp);
-          if (!isNaN(d.getTime())) ts = d.toISOString().replace("T"," ").split(".")[0];
+          if (!isNaN(d.getTime())) {
+            ts = d.toISOString().replace("T", " ").split(".")[0];
+          }
         }
 
+        // Count messages
         totalMessages++;
         if (!userMessages[sender]) userMessages[sender] = 0;
         userMessages[sender]++;
@@ -122,13 +89,18 @@
         let text = msg.text && msg.text.trim() ? filterText(msg.text, sender) : "";
         let displayLine = document.createElement("div");
         displayLine.className = "log-line";
+
         let lineText = `[${ts}] ${sender}: `;
 
         if (msg.media && msg.media.length > 0) {
           msg.media.forEach(m => {
             const uri = m.uri || "";
             const lower = uri.toLowerCase();
-            let tagText = playableExts.some(ext => lower.endsWith(ext)) ? `[Media: ${uri}]` : `[File: ${uri}]`;
+
+            let tagText = playableExts.some(ext => lower.endsWith(ext))
+              ? `[Media: ${uri}]`
+              : `[File: ${uri}]`;
+
             const a = document.createElement("a");
             a.href = uri;
             a.textContent = tagText;
@@ -149,10 +121,10 @@
         logLines.push(lineText);
       });
 
-      // Stats display
+      // Show stats
       const countDiv = document.createElement("div");
       countDiv.style.marginTop = "15px";
-      countDiv.style.fontWeight = "600";
+      countDiv.style.fontWeight = "bold";
       countDiv.textContent = `Total swears detected: ${swearCount}`;
       outputDiv.appendChild(countDiv);
 
@@ -160,13 +132,15 @@
         const perUserDiv = document.createElement("div");
         perUserDiv.style.marginTop = "5px";
         perUserDiv.innerHTML = "Swears per user:<br>" + 
-          Object.entries(userSwears).map(([user, count]) => `${user}: ${count}`).join("<br>");
+          Object.entries(userSwears)
+            .map(([user, count]) => `${user}: ${count}`)
+            .join("<br>");
         outputDiv.appendChild(perUserDiv);
       }
 
       const msgDiv = document.createElement("div");
       msgDiv.style.marginTop = "15px";
-      msgDiv.style.fontWeight = "600";
+      msgDiv.style.fontWeight = "bold";
       msgDiv.textContent = `Total messages: ${totalMessages}`;
       outputDiv.appendChild(msgDiv);
 
@@ -174,22 +148,32 @@
         const perUserMsgDiv = document.createElement("div");
         perUserMsgDiv.style.marginTop = "5px";
         perUserMsgDiv.innerHTML = "Messages per user:<br>" + 
-          Object.entries(userMessages).map(([user, count]) => `${user}: ${count}`).join("<br>");
+          Object.entries(userMessages)
+            .map(([user, count]) => `${user}: ${count}`)
+            .join("<br>");
         outputDiv.appendChild(perUserMsgDiv);
       }
 
-      // Prepare downloadable log
-      let logText = logLines.join("\n") + `\n\nTotal swears detected: ${swearCount}`;
-      if (Object.keys(userSwears).length > 0) logText += "\nSwears per user:\n" + Object.entries(userSwears).map(([user, count]) => `${user}: ${count}`).join("\n");
+      // Add stats to downloaded file
+      let logText = logLines.join("\n") + 
+        `\n\nTotal swears detected: ${swearCount}`;
+      if (Object.keys(userSwears).length > 0) {
+        logText += "\nSwears per user:\n" + 
+          Object.entries(userSwears).map(([user, count]) => `${user}: ${count}`).join("\n");
+      }
       logText += `\n\nTotal messages: ${totalMessages}`;
-      if (Object.keys(userMessages).length > 0) logText += "\nMessages per user:\n" + Object.entries(userMessages).map(([user, count]) => `${user}: ${count}`).join("\n");
+      if (Object.keys(userMessages).length > 0) {
+        logText += "\nMessages per user:\n" + 
+          Object.entries(userMessages).map(([user, count]) => `${user}: ${count}`).join("\n");
+      }
 
       const blob = new Blob([logText], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const link = document.getElementById("downloadLink");
       link.href = url;
       link.download = "messenger_chat.log";
-      link.style.display = "inline-block";
+      link.style.display = "block";
+      link.textContent = "Download .log file";
     };
 
     reader.readAsText(fileInput);
