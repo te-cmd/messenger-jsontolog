@@ -46,7 +46,8 @@
       /t+[\W_]*a+[\W_]*n+[\W_]*g+[\W_]*a+/i, // tanga
       /p+[\W_]*u+[\W_]*t+[\W_]*a+/i, // puta
       /h+[\W_]*a+[\W_]*y+[\W_]*o+[\W_]*p+[\W_]*k+[\W_]*a+/i, // hayopka
-      /t+[\W_]*a+[\W_]*n+[\W_]*g+[\W_]*i+[\W_]*n+[\W_]*a+[\W_]*m+[\W_]*o+/i // tanginamo
+      /t+[\W_]*a+[\W_]*n+[\W_]*g+[\W_]*i+[\W_]*n+[\W_]*a+[\W_]*m+[\W_]*o+/i, // tanginamo
+      /a+[\W_]*s+[\W_]*s+/i // ass
     ];
 
     let mediaFiles = {};
@@ -54,6 +55,8 @@
     let userSwears = {};
     let totalMessages = 0;
     let userMessages = {};
+    let singleEmojiMessages = 0; // counts messages that are only one emoji
+    let userEmojiMessages = {}; // counts per user how many single-emoji messages they sent
 
     // normalize paths
     function normalizePath(p) {
@@ -127,6 +130,8 @@
       userSwears = {};
       totalMessages = 0;
       userMessages = {};
+      singleEmojiMessages = 0;
+      userEmojiMessages = {};
 
       if (!jsonInput.files || !jsonInput.files[0]) {
         alert("Please select your messages JSON file first.");
@@ -158,8 +163,14 @@
         userMessages[sender] = (userMessages[sender] || 0) + 1;
 
         let text = msg.text && msg.text.trim() ? filterText(msg.text, sender) : "";
-        let lineText = `[${ts}] ${sender}: `;
 
+        // Check if message is a single emoji only
+        if (msg.text && /^[\p{Emoji}\uFE0F]$/u.test(msg.text.trim())) {
+          singleEmojiMessages++;
+          userEmojiMessages[sender] = (userEmojiMessages[sender] || 0) + 1;
+        }
+
+        let lineText = `[${ts}] ${sender}: `;
         const div = document.createElement("div");
         div.className = "log-line";
         div.appendChild(document.createTextNode(lineText + (text ? text + " " : "")));
@@ -213,6 +224,11 @@
       let stats = `Total swears detected: ${swearCount}\n`;
       if (Object.keys(userSwears).length > 0) {
         stats += "Swears per user:\n" + Object.entries(userSwears).map(([u,c]) => `${u}: ${c}`).join("\n") + "\n";
+      }
+      stats += `Single emoji-only messages: ${singleEmojiMessages}\n`;
+      if (Object.keys(userEmojiMessages).length > 0) {
+        stats += "Single emoji-only messages per user:\n" + 
+          Object.entries(userEmojiMessages).map(([u,c]) => `${u}: ${c}`).join("\n") + "\n";
       }
       stats += `\nTotal messages: ${totalMessages}\n`;
       if (Object.keys(userMessages).length > 0) {
